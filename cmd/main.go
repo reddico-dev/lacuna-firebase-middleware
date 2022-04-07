@@ -24,6 +24,7 @@ func main() {
 
 func HandlePing() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println(r.Context().Value(fbmiddleware.UserContextKey))
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("ok"))
 	}
