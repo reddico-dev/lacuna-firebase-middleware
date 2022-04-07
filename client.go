@@ -49,13 +49,14 @@ func New(cache stash.Store) (*Client, error) {
 	return &Client{
 		client: http.DefaultClient,
 		cache:  cache,
-		//ApiUrl: "https://sso.api.lacunacloud.com/api/v1",
-		ApiUrl: "http://localhost:5001/api/v1",
+		ApiUrl: "https://sso.api.lacunacloud.com/api/v1",
+		//ApiUrl: "http://localhost:5001/api/v1",
 	}, nil
 }
 
 const AuthHeader = "token"
 const UserContextKey = "user"
+const UserContentUUIDKey = "user_uuid"
 
 func (c *Client) AuthCheck(adminOnly bool) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
@@ -92,9 +93,8 @@ func (c *Client) AuthCheck(adminOnly bool) func(http.Handler) http.Handler {
 
 			ssoResponse.User.Token = token
 			setContext(r, UserContextKey, ssoResponse.User)
+			setContext(r, UserContentUUIDKey, ssoResponse.User.UUID)
 			setContext(r, "app", appKey)
-
-			//fmt.Println(ssoResponse.User)
 
 			if adminOnly && ssoResponse.User.Role > 1 {
 				abort(w, http.StatusUnauthorized, data{"message": "Admin only"})
