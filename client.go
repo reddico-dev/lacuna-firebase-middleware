@@ -1,19 +1,22 @@
-package fbmiddleware
+package sso
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/lacuna-seo/stash"
 	"net/http"
 	"strings"
 )
 
 type (
+	Service interface {
+		AuthCheck(adminOnly bool) func(http.Handler) http.Handler
+		GetTeam(ctx context.Context) ([]User, error)
+		PluckUsers(ctx context.Context, uuids []string) ([]User, error)
+	}
 	Client struct {
 		client *http.Client
-		cache  stash.Store
 		ApiUrl string
 	}
 	User struct {
@@ -45,10 +48,9 @@ type (
 	}
 )
 
-func New(cache stash.Store) (*Client, error) {
+func New() (*Client, error) {
 	return &Client{
 		client: http.DefaultClient,
-		cache:  cache,
 		ApiUrl: "https://sso.api.lacunacloud.com/api/v1",
 		//ApiUrl: "http://localhost:5001/api/v1",
 	}, nil

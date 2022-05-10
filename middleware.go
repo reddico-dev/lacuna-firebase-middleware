@@ -1,4 +1,4 @@
-package fbmiddleware
+package sso
 
 import (
 	"context"
