@@ -48,12 +48,12 @@ type (
 	}
 )
 
-func New() (*Client, error) {
+func New() *Client {
 	return &Client{
 		client: http.DefaultClient,
 		ApiUrl: "https://sso.api.lacunacloud.com/api/v1",
 		//ApiUrl: "http://localhost:5001/api/v1",
-	}, nil
+	}
 }
 
 const AuthHeader = "token"
