@@ -20,7 +20,7 @@ type (
 		ApiUrl       string
 		errorHandler ErrorHandler
 	}
-	ErrorHandler func(writer http.ResponseWriter, statusCode int, err error)
+	ErrorHandler func(writer http.ResponseWriter, request *http.Request, statusCode int, err error)
 	User         struct {
 		ID           int    `json:"id"`
 		UUID         string `json:"uuid"`
@@ -65,7 +65,7 @@ const AuthHeader = "token"
 const UserContextKey = "user"
 const UserContentUUIDKey = "user_uuid"
 
-func DefaultErrorHandler(writer http.ResponseWriter, statusCode int, err error) {
+func DefaultErrorHandler(writer http.ResponseWriter, request *http.Request, statusCode int, err error) {
 	abort(writer, http.StatusInternalServerError, data{"message": err.Error()})
 }
 
@@ -77,7 +77,7 @@ func (c *Client) AuthCheck(adminOnly bool) func(http.Handler) http.Handler {
 			appKey := r.Header.Get("app")
 			req, err := http.NewRequest(http.MethodPost, c.ApiUrl+"/user/sync", nil)
 			if err != nil {
-				c.errorHandler(w, http.StatusInternalServerError, err)
+				c.errorHandler(w, r, http.StatusInternalServerError, err)
 				return
 			}
 			req.Header.Set(AuthHeader, token)
@@ -85,7 +85,7 @@ func (c *Client) AuthCheck(adminOnly bool) func(http.Handler) http.Handler {
 
 			resp, err := c.client.Do(req)
 			if err != nil {
-				c.errorHandler(w, http.StatusInternalServerError, err)
+				c.errorHandler(w, r, http.StatusInternalServerError, err)
 				return
 			}
 			defer resp.Body.Close()
@@ -93,12 +93,12 @@ func (c *Client) AuthCheck(adminOnly bool) func(http.Handler) http.Handler {
 			ssoResponse := AuthCheckResponse{}
 			err = json.NewDecoder(resp.Body).Decode(&ssoResponse)
 			if err != nil {
-				c.errorHandler(w, http.StatusInternalServerError, err)
+				c.errorHandler(w, r, http.StatusInternalServerError, err)
 				return
 			}
 
 			if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-				c.errorHandler(w, resp.StatusCode, errors.New(ssoResponse.Message))
+				c.errorHandler(w, r, resp.StatusCode, errors.New(ssoResponse.Message))
 				return
 			}
 
@@ -108,7 +108,7 @@ func (c *Client) AuthCheck(adminOnly bool) func(http.Handler) http.Handler {
 			setContext(r, "app", appKey)
 
 			if adminOnly && ssoResponse.User.Role > 1 {
-				c.errorHandler(w, resp.StatusCode, errors.New("admin only"))
+				c.errorHandler(w, r, resp.StatusCode, errors.New("admin only"))
 				return
 			}
 
