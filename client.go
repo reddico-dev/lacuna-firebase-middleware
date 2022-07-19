@@ -16,10 +16,12 @@ type (
 		PluckUsers(ctx context.Context, uuids []string) ([]User, error)
 	}
 	Client struct {
-		client *http.Client
-		ApiUrl string
+		client       *http.Client
+		ApiUrl       string
+		errorHandler ErrorHandler
 	}
-	User struct {
+	ErrorHandler func(writer http.ResponseWriter, statusCode int, err error)
+	User         struct {
 		ID           int    `json:"id"`
 		UUID         string `json:"uuid"`
 		Title        string `json:"title"`
@@ -48,7 +50,10 @@ type (
 	}
 )
 
-func New() *Client {
+func New(errorHandler ErrorHandler) *Client {
+	if errorHandler == nil {
+		errorHandler = DefaultErrorHandler
+	}
 	return &Client{
 		client: http.DefaultClient,
 		ApiUrl: "https://sso.api.lacunacloud.com/api/v1",
@@ -60,6 +65,10 @@ const AuthHeader = "token"
 const UserContextKey = "user"
 const UserContentUUIDKey = "user_uuid"
 
+func DefaultErrorHandler(writer http.ResponseWriter, statusCode int, err error) {
+	abort(writer, http.StatusInternalServerError, data{"message": err.Error()})
+}
+
 func (c *Client) AuthCheck(adminOnly bool) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -68,7 +77,7 @@ func (c *Client) AuthCheck(adminOnly bool) func(http.Handler) http.Handler {
 			appKey := r.Header.Get("app")
 			req, err := http.NewRequest(http.MethodPost, c.ApiUrl+"/user/sync", nil)
 			if err != nil {
-				abort(w, http.StatusInternalServerError, data{"message": err.Error()})
+				c.errorHandler(w, http.StatusInternalServerError, err)
 				return
 			}
 			req.Header.Set(AuthHeader, token)
@@ -76,7 +85,7 @@ func (c *Client) AuthCheck(adminOnly bool) func(http.Handler) http.Handler {
 
 			resp, err := c.client.Do(req)
 			if err != nil {
-				abort(w, http.StatusInternalServerError, data{"message": err.Error()})
+				c.errorHandler(w, http.StatusInternalServerError, err)
 				return
 			}
 			defer resp.Body.Close()
@@ -84,12 +93,12 @@ func (c *Client) AuthCheck(adminOnly bool) func(http.Handler) http.Handler {
 			ssoResponse := AuthCheckResponse{}
 			err = json.NewDecoder(resp.Body).Decode(&ssoResponse)
 			if err != nil {
-				abort(w, http.StatusInternalServerError, data{"message": err.Error()})
+				c.errorHandler(w, http.StatusInternalServerError, err)
 				return
 			}
 
 			if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-				abort(w, resp.StatusCode, data{"message": ssoResponse.Message})
+				c.errorHandler(w, resp.StatusCode, errors.New(ssoResponse.Message))
 				return
 			}
 
@@ -99,7 +108,7 @@ func (c *Client) AuthCheck(adminOnly bool) func(http.Handler) http.Handler {
 			setContext(r, "app", appKey)
 
 			if adminOnly && ssoResponse.User.Role > 1 {
-				abort(w, http.StatusUnauthorized, data{"message": "Admin only"})
+				c.errorHandler(w, resp.StatusCode, errors.New("admin only"))
 				return
 			}
 
