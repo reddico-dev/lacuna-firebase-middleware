@@ -55,8 +55,9 @@ func New(errorHandler ErrorHandler) *Client {
 		errorHandler = DefaultErrorHandler
 	}
 	return &Client{
-		client: http.DefaultClient,
-		ApiUrl: "https://sso.api.lacunacloud.com/api/v1",
+		client:       http.DefaultClient,
+		ApiUrl:       "https://sso.api.lacunacloud.com/api/v1",
+		errorHandler: errorHandler,
 		//ApiUrl: "http://localhost:5001/api/v1",
 	}
 }
