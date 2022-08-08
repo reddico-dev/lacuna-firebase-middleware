@@ -21,6 +21,27 @@ type (
 		errorHandler ErrorHandler
 	}
 	ErrorHandler func(writer http.ResponseWriter, request *http.Request, statusCode int, err error)
+	Organization struct {
+		ID      int    `json:"id"`
+		Name    string `json:"name"`
+		Slug    string `json:"slug"`
+		Apps    []struct{
+			ID          int    `json:"id"`
+			Title       string `json:"title"`
+			Colour      string `json:"colour"`
+			Url         string `json:"url"`
+			ShortDesc   string `json:"short_desc"`
+			Description string `json:"description"`
+			Image       string `json:"image"`
+			Category    string `json:"category"`
+			Key         string `json:"key"`
+			LinearId    string `json:"linear_id"`
+			Enabled     bool   `json:"enabled"`
+		}  `json:"apps"`
+		Domain     string `json:"domain"`
+		OpenInvite bool   `json:"open_invite"`
+		Created int64  `json:"created"`
+	}
 	User         struct {
 		ID           int    `json:"id"`
 		UUID         string `json:"uuid"`
@@ -33,12 +54,8 @@ type (
 		CreatedAt    int64  `json:"created_at"`
 		UpdatedAt    int64  `json:"updated_at"`
 		DeletedAt    int64  `json:"deleted_at"`
-		Organization struct {
-			ID      int    `db:"id" json:"id"`
-			Name    string `db:"name" json:"name"`
-			Slug    string `db:"slug" json:"slug"`
-			Created int64  `db:"created" json:"created"`
-		} `json:"organization"`
+		Organization Organization `json:"organization"`
+		Organizations []Organization `json:"organizations"`
 	}
 	AuthCheckResponse struct {
 		Message string `json:"message"`
@@ -56,7 +73,7 @@ func New(errorHandler ErrorHandler) *Client {
 	}
 	return &Client{
 		client:       http.DefaultClient,
-		ApiUrl:       "https://sso.api.lacunacloud.com/api/v1",
+		ApiUrl:       "https://account.api.lacunacloud.com/api/v1",
 		errorHandler: errorHandler,
 		//ApiUrl: "http://localhost:5001/api/v1",
 	}
