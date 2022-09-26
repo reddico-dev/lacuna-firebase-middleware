@@ -13,6 +13,7 @@ type (
 	Service interface {
 		AuthCheck(adminOnly bool) func(http.Handler) http.Handler
 		GetTeam(ctx context.Context) ([]User, error)
+		GetAll(ctx context.Context) ([]User, error)
 		PluckUsers(ctx context.Context, uuids []string) ([]User, error)
 	}
 	Client struct {
@@ -22,10 +23,10 @@ type (
 	}
 	ErrorHandler func(writer http.ResponseWriter, request *http.Request, statusCode int, err error)
 	Organization struct {
-		ID      int    `json:"id"`
-		Name    string `json:"name"`
-		Slug    string `json:"slug"`
-		Apps    []struct{
+		ID   int    `json:"id"`
+		Name string `json:"name"`
+		Slug string `json:"slug"`
+		Apps []struct {
 			ID          int    `json:"id"`
 			Title       string `json:"title"`
 			Colour      string `json:"colour"`
@@ -37,24 +38,24 @@ type (
 			Key         string `json:"key"`
 			LinearId    string `json:"linear_id"`
 			Enabled     bool   `json:"enabled"`
-		}  `json:"apps"`
+		} `json:"apps"`
 		Domain     string `json:"domain"`
 		OpenInvite bool   `json:"open_invite"`
-		Created int64  `json:"created"`
+		Created    int64  `json:"created"`
 	}
-	User         struct {
-		ID           int    `json:"id"`
-		UUID         string `json:"uuid"`
-		Title        string `json:"title"`
-		FirstName    string `json:"first_name"`
-		LastName     string `json:"last_name"`
-		Email        string `json:"email"`
-		Role         int    `json:"role"`
-		Token        string `json:"token"`
-		CreatedAt    int64  `json:"created_at"`
-		UpdatedAt    int64  `json:"updated_at"`
-		DeletedAt    int64  `json:"deleted_at"`
-		Organization Organization `json:"organization"`
+	User struct {
+		ID            int            `json:"id"`
+		UUID          string         `json:"uuid"`
+		Title         string         `json:"title"`
+		FirstName     string         `json:"first_name"`
+		LastName      string         `json:"last_name"`
+		Email         string         `json:"email"`
+		Role          int            `json:"role"`
+		Token         string         `json:"token"`
+		CreatedAt     int64          `json:"created_at"`
+		UpdatedAt     int64          `json:"updated_at"`
+		DeletedAt     int64          `json:"deleted_at"`
+		Organization  Organization   `json:"organization"`
 		Organizations []Organization `json:"organizations"`
 	}
 	AuthCheckResponse struct {
@@ -168,6 +169,40 @@ func (c *Client) GetTeam(ctx context.Context) ([]User, error) {
 	//fmt.Println(ssoResponse)
 	return ssoResponse.Users, nil
 
+}
+
+func (c *Client) GetAll(ctx context.Context) ([]User, error) {
+	ssoResponse := UserListResponse{}
+
+	ctxUserData := ctx.Value(UserContextKey)
+	appKey := ctx.Value("app")
+
+	// Cast firebase context to struct
+	fbUserData, getUserOk := ctxUserData.(*User)
+	if !getUserOk {
+		return ssoResponse.Users, errors.New("could not cast context to user struct")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, c.ApiUrl+"/users/list", nil)
+	if err != nil {
+		return ssoResponse.Users, err
+	}
+	req.Header.Set(AuthHeader, fbUserData.Token)
+	req.Header.Set("app", appKey.(string))
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return ssoResponse.Users, err
+	}
+	defer resp.Body.Close()
+
+	err = json.NewDecoder(resp.Body).Decode(&ssoResponse)
+	if err != nil {
+		return ssoResponse.Users, err
+	}
+
+	//fmt.Println(ssoResponse)
+	return ssoResponse.Users, nil
 }
 
 func (c *Client) PluckUsers(ctx context.Context, uuids []string) ([]User, error) {
