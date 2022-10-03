@@ -248,3 +248,44 @@ func (c *Client) PluckUsers(ctx context.Context, uuids []string) ([]User, error)
 	return ssoResponse.Users, nil
 
 }
+
+type ApiEvent struct {
+	ID            int    `json:"id" id:"id"`
+	UserID        int    `json:"user_id" id:"user_id"`
+	App           string `json:"app" id:"app"`
+	Endpoint      string `json:"endpoint" id:"endpoint"`
+	Method        string `json:"method" id:"method"`
+	Time          int64  `json:"time" id:"time"`
+	Address       string `json:"address" id:"address"`
+	WorkspaceSlug string `json:"workspace_slug" id:"workspace_slug"`
+}
+
+func (c *Client) Usage() func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			go func() {
+				req, err := http.NewRequest(http.MethodGet, c.ApiUrl+"/activity/log", nil)
+				if err != nil {
+					c.errorHandler(w, r, http.StatusInternalServerError, err)
+					return
+				}
+
+				req.Header.Set("token", r.Context().Value("token").(string))
+				req.Header.Set("app", r.Context().Value("app").(string))
+				req.Header.Set("endpoint", r.URL.Path)
+				req.Header.Set("address", r.RemoteAddr)
+
+				resp, err := c.client.Do(req)
+				if err != nil {
+					c.errorHandler(w, r, resp.StatusCode, err)
+					return
+				}
+
+				if resp.StatusCode != 200 {
+					c.errorHandler(w, r, resp.StatusCode, err)
+					return
+				}
+			}()
+		})
+	}
+}
