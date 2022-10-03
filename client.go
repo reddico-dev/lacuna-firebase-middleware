@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"net/http"
 	"strings"
 )
@@ -287,6 +289,12 @@ func (c *Client) Usage() func(http.Handler) http.Handler {
 					c.errorHandler(w, r, resp.StatusCode, err)
 					return
 				}
+				all, err := io.ReadAll(resp.Body)
+				if err != nil {
+					c.errorHandler(w, r, resp.StatusCode, err)
+					return
+				}
+				fmt.Println(string(all))
 
 				if resp.StatusCode != 200 {
 					c.errorHandler(w, r, resp.StatusCode, err)
