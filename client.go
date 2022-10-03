@@ -273,6 +273,7 @@ func (c *Client) Usage() func(http.Handler) http.Handler {
 				req.Header.Set("token", r.Context().Value("token").(string))
 				req.Header.Set("app", r.Context().Value("app").(string))
 				req.Header.Set("endpoint", r.URL.Path)
+				req.Header.Set("method", r.Method)
 				req.Header.Set("address", r.RemoteAddr)
 
 				resp, err := c.client.Do(req)
