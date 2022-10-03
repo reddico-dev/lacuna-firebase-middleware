@@ -272,13 +272,7 @@ func (c *Client) Usage() func(http.Handler) http.Handler {
 					return
 				}
 
-				token := ""
-				tk, ok := r.Context().Value("token").(string)
-				if ok {
-					token = tk
-				}
-
-				req.Header.Set("token", token)
+				req.Header.Set("token", r.Header.Get("token"))
 				req.Header.Set("app", r.Header.Get("app"))
 				req.Header.Set("endpoint", r.URL.Path)
 				req.Header.Set("method", r.Method)
