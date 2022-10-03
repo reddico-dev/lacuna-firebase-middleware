@@ -270,8 +270,14 @@ func (c *Client) Usage() func(http.Handler) http.Handler {
 					return
 				}
 
-				req.Header.Set("token", r.Context().Value("token").(string))
-				req.Header.Set("app", r.Context().Value("app").(string))
+				token := ""
+				tk, ok := r.Context().Value("token").(string)
+				if ok {
+					token = tk
+				}
+
+				req.Header.Set("token", token)
+				req.Header.Set("app", r.Header.Get("app"))
 				req.Header.Set("endpoint", r.URL.Path)
 				req.Header.Set("method", r.Method)
 				req.Header.Set("address", r.RemoteAddr)
