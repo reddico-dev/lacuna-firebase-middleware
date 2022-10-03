@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 )
@@ -278,17 +277,17 @@ func (c *Client) Usage() func(http.Handler) http.Handler {
 				req.Header.Set("method", r.Method)
 				req.Header.Set("address", r.RemoteAddr)
 
+				fmt.Println(r.Header.Get("token"))
+				fmt.Println(r.Header.Get("app"))
+				fmt.Println(r.URL.Path)
+				fmt.Println(r.Method)
+				fmt.Println(r.RemoteAddr)
+
 				resp, err := c.client.Do(req)
 				if err != nil {
 					c.errorHandler(w, r, resp.StatusCode, err)
 					return
 				}
-				all, err := io.ReadAll(resp.Body)
-				if err != nil {
-					c.errorHandler(w, r, resp.StatusCode, err)
-					return
-				}
-				fmt.Println(string(all))
 
 				if resp.StatusCode != 200 {
 					c.errorHandler(w, r, resp.StatusCode, err)
