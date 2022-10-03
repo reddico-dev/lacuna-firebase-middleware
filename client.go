@@ -266,7 +266,7 @@ func (c *Client) Usage() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			go func() {
-				req, err := http.NewRequest(http.MethodGet, c.ApiUrl+"/activity/log", nil)
+				req, err := http.NewRequest(http.MethodPost, c.ApiUrl+"/activity/log", nil)
 				if err != nil {
 					c.errorHandler(w, r, http.StatusInternalServerError, err)
 					return
