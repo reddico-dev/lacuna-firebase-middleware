@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"strings"
 )
@@ -276,12 +275,6 @@ func (c *Client) Usage() func(http.Handler) http.Handler {
 				req.Header.Set("endpoint", r.URL.Path)
 				req.Header.Set("method", r.Method)
 				req.Header.Set("address", r.RemoteAddr)
-
-				fmt.Println(r.Header.Get("token"))
-				fmt.Println(r.Header.Get("app"))
-				fmt.Println(r.URL.Path)
-				fmt.Println(r.Method)
-				fmt.Println(r.RemoteAddr)
 
 				resp, err := c.client.Do(req)
 				if err != nil {
