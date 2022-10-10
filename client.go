@@ -13,7 +13,7 @@ type (
 	Service interface {
 		AuthCheck(adminOnly bool) func(http.Handler) http.Handler
 		GetTeam(ctx context.Context) ([]User, error)
-		GetAll(ctx context.Context) ([]User, error)
+		GetAll(ctx context.Context, token string) ([]User, error)
 		PluckUsers(ctx context.Context, uuids []string) ([]User, error)
 	}
 	Client struct {
