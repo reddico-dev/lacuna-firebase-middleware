@@ -171,24 +171,16 @@ func (c *Client) GetTeam(ctx context.Context) ([]User, error) {
 
 }
 
-func (c *Client) GetAll(ctx context.Context) ([]User, error) {
+func (c *Client) GetAll(ctx context.Context, token string) ([]User, error) {
 	ssoResponse := UserListResponse{}
-
-	ctxUserData := ctx.Value(UserContextKey)
-	appKey := ctx.Value("app")
-
-	// Cast firebase context to struct
-	fbUserData, getUserOk := ctxUserData.(*User)
-	if !getUserOk {
-		return ssoResponse.Users, errors.New("could not cast context to user struct")
-	}
 
 	req, err := http.NewRequest(http.MethodGet, c.ApiUrl+"/users/list", nil)
 	if err != nil {
 		return ssoResponse.Users, err
 	}
-	req.Header.Set(AuthHeader, fbUserData.Token)
-	req.Header.Set("app", appKey.(string))
+
+	req.Header.Set(AuthHeader, token)
+	req.Header.Set("app", ctx.Value("app").(string))
 
 	resp, err := c.client.Do(req)
 	if err != nil {
@@ -201,7 +193,6 @@ func (c *Client) GetAll(ctx context.Context) ([]User, error) {
 		return ssoResponse.Users, err
 	}
 
-	//fmt.Println(ssoResponse)
 	return ssoResponse.Users, nil
 }
 
