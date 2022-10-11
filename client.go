@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"net/http"
 	"strings"
 )
@@ -172,11 +174,9 @@ func (c *Client) GetTeam(ctx context.Context) ([]User, error) {
 }
 
 func (c *Client) GetAll(ctx context.Context, token string) ([]User, error) {
-	ssoResponse := UserListResponse{}
-
 	req, err := http.NewRequest(http.MethodGet, c.ApiUrl+"/users/list", nil)
 	if err != nil {
-		return ssoResponse.Users, err
+		return nil, err
 	}
 
 	req.Header.Set(AuthHeader, token)
@@ -184,13 +184,19 @@ func (c *Client) GetAll(ctx context.Context, token string) ([]User, error) {
 
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return ssoResponse.Users, err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
-	err = json.NewDecoder(resp.Body).Decode(&ssoResponse)
+	buf, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return ssoResponse.Users, err
+		return nil, err
+	}
+
+	ssoResponse := UserListResponse{}
+	err = json.Unmarshal(buf, &ssoResponse)
+	if err != nil {
+		return nil, fmt.Errorf("%s - response: %s", err.Error(), string(buf))
 	}
 
 	return ssoResponse.Users, nil
